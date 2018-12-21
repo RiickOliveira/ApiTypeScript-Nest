@@ -5,6 +5,7 @@ import { Condomino } from 'src/products/models/condomino.model'
 import { CondominoConvidado } from 'src/products/models/condominoConvidado.model';
 import { Porteiro } from 'src/products/models/porteiro.model';
 import { Visita } from 'src/products/models/visita.model'; 
+import { Injectable } from '@nestjs/common';
 
 export const databaseProviders = [
   {
@@ -18,6 +19,8 @@ export const databaseProviders = [
         username: 'postgres',
         password: '123456789',
         database: 'AloPorteiro',
+        timezone: '-03:00',
+        logging: false
       });
       sequelize.addModels([
           Pessoa,

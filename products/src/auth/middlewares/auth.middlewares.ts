@@ -10,23 +10,27 @@ export class AuthMiddleware implements NestMiddleware {
         return async (req, res, next) => {
             if (req.headers.authorization && (req.headers.authorization as string).split(' ')[0] === 'Bearer') {
                 const token = (req.headers.authorization as string).split(' ')[1];
-                const decoded : any = jwt.verify(token, this.JWT_KEY || ''/*,function(err){
-                    if (err.name == "TokenExpiredError") {
-                        res.status(401).json({sucesso:false, mensagem:"Sua sessão expirou!",data: {}});
-                        return;
-                    } else {
-                        res.status(401).json({sucesso:false, mensagem:"Token inválido! Efetue login novamente", data: {}});
-                        return;
+                const decoded : any = jwt.verify(token, this.JWT_KEY || '',function(err){
+                    if (err) {
+                        if (err.name == "TokenExpiredError") {
+                            res.status(401).json({sucesso:false, mensagem:"Sua sessão expirou!"});
+                            return;
+                        } else {
+                            res.status(401).json({sucesso:false, mensagem:"Token inválido! Efetue login novamente"});
+                            return;
+                        }
                     }
-                }*/);
+                    
+                });
                 
                 const user = await Usuario.findOne<Usuario>({
                     where: {
                         token: token
                     }
                 });
+                
                 if (!user) {
-                    res.status(401).json({msg:'Acesso nao autorizado!'});
+                    res.status(401).json({msg:'Usuario nao encontrado'});
                 };
                 next();
             } else {

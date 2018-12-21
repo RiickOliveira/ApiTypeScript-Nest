@@ -16,7 +16,7 @@ export class VisitaService {
             include: [
                 {
                     model : Pessoa,
-                    attributes : ['nome','digital']
+                    attributes : ['id','nome','digital']
                 },
                 {
                     model:Condomino,
@@ -24,7 +24,7 @@ export class VisitaService {
 
                     include : [{
                         model : Pessoa,
-                        attributes : ['nome']
+                        attributes : ['id','nome']
                     }]
                 },
                 {
@@ -33,11 +33,34 @@ export class VisitaService {
 
                     include : [{
                         model : Pessoa,
-                        attributes : ['nome']
+                        attributes : ['id','nome']
                     }]
                 }
             ]
         });
+    }
+
+    async findVisita(condominoId:number): Promise<Visita[]> {  
+        return await this.visitaRepository.findAll({
+            include : [{
+                model : Pessoa
+            }],
+            where : {
+                condominoId : condominoId
+            }
+        })
+
+    }
+
+    async findOneVisita(id:number):Promise<Visita[]> {
+        return await this.visitaRepository.findAll({
+            include : [{
+                model : Pessoa,
+            }],
+            where : {
+                id : id
+            }
+        })
     }
 
     async findById(id:number): Promise<Visita> {
@@ -45,7 +68,7 @@ export class VisitaService {
             include: [
                 {
                     model : Pessoa,
-                    attributes : ['nome','digital']
+                    attributes : ['id','nome','digital']
                 },
                 {
                     model:Condomino,
@@ -53,7 +76,7 @@ export class VisitaService {
 
                     include : [{
                         model : Pessoa,
-                        attributes : ['nome']
+                        attributes : ['id','nome']
                     }]
                 },
                 {
@@ -62,7 +85,7 @@ export class VisitaService {
 
                     include : [{
                         model : Pessoa,
-                        attributes : ['nome']
+                        attributes : ['id','nome']
                     }]
                 }
             ]
@@ -77,14 +100,25 @@ export class VisitaService {
 
         let usuario = await this.visitaRepository.findById<Visita>(id);
     
-        if (!usuario.id) {
-            console.error('VISISTA NAO ENCONTRADA');
-            return;
+        if (!usuario) {
+            throw new Error('Visita nao encontrada!');
         }
     
         usuario = this._assign(usuario, newValue);
     
         return await usuario.save({ returning: true });
+    }
+
+    async updateIdVisita(id:number, newValue: CreateVisitaDto):Promise<Visita | null> {
+        let visita = await this.visitaRepository.findById<Visita>(id);
+    
+        return await visita.update({
+            pessoaId: newValue 
+        },{
+            where : {
+                id : visita.id
+            }
+        });
     }
 
     async delete(id:number): Promise<Number> {
@@ -101,6 +135,4 @@ export class VisitaService {
         }
         return visita as Visita;
     }
-
-
 }

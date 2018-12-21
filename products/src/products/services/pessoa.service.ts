@@ -24,9 +24,8 @@ export class PessoaService {
 
         let pessoa = await this.PessoaRepository.findById<Pessoa>(id);
     
-        if (!pessoa.id) {
-          console.error('product doesn\'t exist');
-          return;
+        if (!pessoa) {
+          throw new Error('Pessoa nao encontrada!');
         }
     
         pessoa = this._assign(pessoa, newValue);

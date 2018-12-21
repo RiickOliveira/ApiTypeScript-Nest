@@ -1,16 +1,27 @@
-import { Controller, Get , Post, Body, Response , HttpStatus, Delete, Param, Put} from '@nestjs/common'
+import { Controller, Get , Post, Body, Response , HttpStatus, Delete, Param, Put, Request} from '@nestjs/common'
 import { VisitaService } from '../services/visita.service';
 import { Visita } from '../models/visita.model';
 import { CreateVisitaDto } from '../dto/createVisitaDto';
+import { request } from 'https';
 
 @Controller('visita')
 export class VisitaController {
     constructor(private readonly visitaService: VisitaService) { }
 
     @Get()
-    async findAll (): Promise<Visita[]> {
-        return await this.visitaService.findAll();
-    }
+    async findAll (@Response() res, @Request() req): Promise<Visita[]> {
+        if (req.query.where) {
+            let visitas = await this.visitaService.findVisita(req.query.where);
+            return res.status(200).json({sucesso:true,data:visitas})
+        }
+        if (req.query.visita) {
+            let visitas = await this.visitaService.findOneVisita(req.query.visita);
+            return res.status(200).json({sucesso:true,data:visitas})
+        } else {
+            let visitas = await this.visitaService.findAll();
+            return res.status(200).json({sucesso:true,data:visitas})
+        }
+    }   
 
     @Get('/:id')
     public async findById (@Response() res, @Param() param) {
@@ -20,22 +31,33 @@ export class VisitaController {
             res.status(404).json({sucesso:false, msg:"Visita nao encontrada"})
             return;
         }
-        return res.status(200).json({data: visita});
+        return res.status(200).json({sucesso:true,data: visita});
     }
 
     @Post()
-    async create (@Response () res, @Body() createVisitaDto: CreateVisitaDto) {
-        await this.visitaService.create(createVisitaDto);
+    async create (@Response () res, @Body() payload: any) {
+        
+        payload.visita.situacao = 1;
+        
+        let visita = await this.visitaService.create(payload.visita);
         return res.status(HttpStatus.OK).json({
             sucesso : true, 
             msg: 'incluido com exito', 
-            data : createVisitaDto
+            data : visita
         });
     }
 
     @Put('/:id')
-    async update (@Response() res, @Body() body, @Param() param) {
-        const visita = await this.visitaService.update(param.id, body);
+    async update (@Response() res, @Body() payload:any, @Param() param) {
+        const visita = await this.visitaService.update(param.id, payload.visita);
+        return res.status(200).json({sucesso:true,data:visita})
+    }
+
+    @Put('/:id/updatePessoa')
+    async updateIdVisita (@Response() res, @Body() payload:any, @Param() param) {
+        console.log(payload)
+        payload.pessoaId = payload.pessoaId
+        const visita = await this.visitaService.updateIdVisita(param.id, payload.pessoaId);
         return res.status(200).json({sucesso:true,data:visita})
     }
 

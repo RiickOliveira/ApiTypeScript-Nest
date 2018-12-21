@@ -10,11 +10,10 @@ export class AuthController {
         if (!body) throw new Error('auth:login:missingInformation');
         if (!body.email) throw new Error('auth:login:missingEmail');
         if (!body.senha) throw new Error('auth:login:missingPassword');
-        console.log(body)
 
         /*const token = await this.authService.sign(body);
         res.status(200).json('Bearer ' + token);*/
         const usuario = await this.authService.sign(body);
-        res.status(200).json({data: usuario});
+        return res.status(200).json({data: usuario});
     }
 }

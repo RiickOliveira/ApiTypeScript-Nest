@@ -20,16 +20,19 @@ import { VisitaController } from './controllers/visita.controller';
 import { VisitaProviders } from './providers/visita.provider';
 import { MiddlewareConsumer } from '@nestjs/common/interfaces/middleware';
 import { AuthMiddleware } from '../auth/middlewares/auth.middlewares';
+import { Digital } from 'src/util/util';
+import { AuthModule } from 'src/auth/auth.module';
+import { AuthController } from 'src/auth/auth.controller';
 
 @Module({
-    imports : [DatabaseModule],
+    imports : [DatabaseModule,Digital],
     controllers : [
         PessoaController,
         UsuarioController,
         CondominoController,
         PorteiroController,
         ConvidadoController,
-        VisitaController
+        VisitaController,
     ],
     providers : [
         PessoaService, ...PessoaProviders,
@@ -37,7 +40,8 @@ import { AuthMiddleware } from '../auth/middlewares/auth.middlewares';
         CondominoService, ...CondominoProviders,
         PorteiroService,...PorteiroProviders,
         CondominoConvidadoService,...CondominoConvidadoProviders,
-        VisitaService,...VisitaProviders
+        VisitaService,...VisitaProviders,
+        Digital
     ],
     
 })
@@ -59,7 +63,22 @@ export class ProductsModule {
                 { path: '/condomino', method: RequestMethod.GET },
                 { path: '/condomino/:id', method: RequestMethod.GET },
                 { path: '/condomino/:id', method: RequestMethod.PUT },
-                { path: '/condomino/:id', method: RequestMethod.DELETE }
+                { path: '/condomino/:id', method: RequestMethod.DELETE },
+
+                { path: '/convidado', method: RequestMethod.GET },
+                { path: '/convidado/:id', method: RequestMethod.GET },
+                { path: '/convidado/:id', method: RequestMethod.PUT },
+                { path: '/convidado/:id', method: RequestMethod.DELETE },
+
+                { path: '/porteiro', method: RequestMethod.GET },
+                { path: '/porteiro/:id', method: RequestMethod.GET },
+                { path: '/porteiro/:id', method: RequestMethod.PUT },
+                { path: '/porteiro/:id', method: RequestMethod.DELETE },
+
+                { path: '/pessoa', method: RequestMethod.GET },
+                { path: '/pessoa/:id', method: RequestMethod.GET },
+                { path: '/pessoa/:id', method: RequestMethod.PUT },
+                { path: '/pessoa/:id', method: RequestMethod.DELETE }
             );
     }
 }

@@ -3,6 +3,7 @@ import { Usuario } from '../models/usuario.model';
 import { Pessoa } from '../models/pessoa.model';
 import { Porteiro } from '../models/porteiro.model';
 import { CreatePorteiroDto } from '../dto/createPorteiroDto';
+import { async } from 'rxjs/internal/scheduler/async';
 
 @Injectable()
 export class PorteiroService {
@@ -10,6 +11,7 @@ export class PorteiroService {
         @Inject ('PorteiroRepository') private readonly porteiroRepository : typeof Porteiro,
         @Inject ('UsuarioRepository') private readonly usuarioRepository : typeof Usuario,
         @Inject ('PessoaRepository') private readonly pessoaRepository : typeof Pessoa,
+        @Inject ('SequelizeToken') private readonly sequelize
     ) {}
 
     async findAll(): Promise<Porteiro[]> {
@@ -34,46 +36,85 @@ export class PorteiroService {
                 },
                 {
                     model : Usuario,
-                    attributes : ['email','desativado']
+                    attributes : ['email','desativado','senha']
                 }
             ]
         });
     }
 
     async create (createPorteiroDto : CreatePorteiroDto): Promise<Porteiro> {
-        const pessoa = await this.pessoaRepository.create<Pessoa>(createPorteiroDto.pessoa);
-        const usuario = await this.usuarioRepository.create<Usuario>(createPorteiroDto.usuario);
+        return await this.sequelize.transaction(async t => {
+            
+            const pessoa = await this.pessoaRepository.create<Pessoa>(createPorteiroDto.pessoa,{transaction:t});
+            const usuario = await this.usuarioRepository.create<Usuario>(createPorteiroDto.usuario,{transaction:t});
 
-        createPorteiroDto.pessoaId = pessoa.id;
-        createPorteiroDto.usuarioId = usuario.id;
+            createPorteiroDto.pessoaId = pessoa.id;
+            createPorteiroDto.usuarioId = usuario.id;
 
-        return await this.porteiroRepository.create<Porteiro>(createPorteiroDto);
+            return await this.porteiroRepository.create<Porteiro>(createPorteiroDto,{transaction:t});
+        })
     } 
 
     async update (id:number , newValue:CreatePorteiroDto): Promise<Porteiro | null> {
-        let porteiro = await this.porteiroRepository.findById<Porteiro>(id);
-        
-        if (!porteiro) {
-            console.error('PORTEIRO NAO EXISTE')
-           return;
-        }
+        return await this.sequelize.transaction(async t => {
+            
+            let porteiro = await this.porteiroRepository.findById<Porteiro>(id);
+            let port = porteiro.get({plain : true})
+            
+            if (!porteiro) {
+                throw new Error('Porteiro nao encontrado!')
+            }
 
-        porteiro.usuario.update(newValue.usuario);
-        porteiro.pessoa.update(newValue.pessoa);
+            newValue.pessoaId = port.pessoaId;
+            newValue.usuarioId = port.usuarioId;
 
-        porteiro = this._assign(porteiro,newValue)
-        return await porteiro.save({returning:true})
+            await this.usuarioRepository.update(newValue.usuario,{
+                transaction : t,
+                where : {
+                    id : port.usuarioId
+                }
+            });
+
+            await this.pessoaRepository.update(newValue.pessoa,{
+                transaction :t,
+                where : {
+                    id : port.pessoaId
+                }
+            });
+
+            porteiro = this._assign(porteiro,newValue)
+            return await porteiro.save({returning:true,transaction:t})
+        })    
     }
 
     async delete(id:number): Promise<number> {
-        let porteiro = await this.porteiroRepository.findById<Porteiro>(id);
+        return this.sequelize.transaction(async t => {
+            
+            let porteiro = await this.porteiroRepository.findById<Porteiro>(id);
+            let port = porteiro.get({plain : true})
 
-        await porteiro.usuario.destroy();
-        await porteiro.pessoa.destroy();
-        
-        return await this.porteiroRepository.destroy({
-            where : {id}
-        })
+            if (!porteiro) {
+                throw new Error('Porteiro nao encontrado!');
+            }
+            
+            await this.usuarioRepository.destroy({
+                transaction :t,
+                where : {
+                    id : port.usuarioId
+                }
+            });
+            await this.pessoaRepository.destroy({
+                transaction : t,
+                where : {
+                    id : port.pessoaId
+                }
+            });
+            
+            return await this.porteiroRepository.destroy({
+                transaction :t,
+                where : {id}
+            })
+        })    
     }
 
     private _assign(porteiro: CreatePorteiroDto , newValue: CreatePorteiroDto): Porteiro {

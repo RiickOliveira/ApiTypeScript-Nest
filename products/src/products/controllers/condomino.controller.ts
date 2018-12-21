@@ -2,14 +2,20 @@ import { Controller, Get , Post, Body, Response , HttpStatus, Delete, Param, Put
 import { Condomino } from '../models/condomino.model';
 import { CreateCondominoDto } from '../dto/createCondominoDto';
 import { CondominoService } from '../services/condomino.service';
+import { Digital } from 'src/util/util'
+import { Sequelize } from 'sequelize-typescript';
 
 @Controller('condomino')
 export class CondominoController {
-    constructor(private readonly condominoService: CondominoService) { }
+    constructor(
+        private readonly condominoService: CondominoService,
+        private readonly digital: Digital
+    ) { }
 
     @Get()
-    async findAll (): Promise<Condomino[]> {
-        return await this.condominoService.findAll();
+    async findAll (@Response() res): Promise<Condomino[]> {
+        let condomino = await this.condominoService.findAll();
+        return res.status(200).json({data:condomino})
     }
 
     @Get('/:id')
@@ -19,18 +25,25 @@ export class CondominoController {
     }
 
     @Post()
-    async create (@Response () res, @Body() createCondominoDto: CreateCondominoDto) {
-        await this.condominoService.create(createCondominoDto);
+    async create (@Response () res, @Body() payload : any) {
+
+        payload.condomino.usuario.desativado = false;
+        payload.condomino.usuario.tipo       = 2;
+        payload.condomino.usuario.criacao    = new Date();
+        payload.condomino.pessoa.criacao     = new Date();
+        payload.condomino.pessoa.digital     = this.digital.geraDigital()
+        
+        let condomino = await this.condominoService.create(payload.condomino);
         return res.status(HttpStatus.OK).json({
             sucesso : true, 
             msg: 'incluido com exito', 
-            data : createCondominoDto
+            data : condomino
         });
     }
 
     @Put('/:id')
-    async update (@Response() res,@Param() param, @Body() body) {
-        const condomino = await this.condominoService.update(param.id,body);
+    async update (@Response() res, @Param() param, @Body() payload: any) {
+        const condomino = await this.condominoService.update(param.id,payload.condomino);
         return res.status(200).json({sucesso:true,data:condomino})
     }
 

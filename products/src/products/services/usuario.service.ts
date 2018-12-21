@@ -24,9 +24,8 @@ export class UsuarioService {
 
         let usuario = await this.usuarioRepository.findById<Usuario>(id);
     
-        if (!usuario.id) {
-            console.error('USUARIO NAO ENCONTRADO');
-            return;
+        if (!usuario) {
+            throw new Error('Usuario nao encontrado!');
         }
     
         usuario = this._assign(usuario, newValue);
